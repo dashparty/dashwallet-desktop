@@ -42,20 +42,20 @@
     <!-- Auto-Sign BTCPay Information -->
     <div class="form-group" id="btcpay" style="display: none">
         <label class="col-sm-3 control-label text-left">
-            Auto-BTCPay 
-            <a href="#" data-toggle="tooltip" title='This indicates if you would like to automatically sign and broadcast BTCPay transactions when matches for this order are detected' class="pull-right"><i class="fa fa-lg fa-question-circle-o margin-top-5"></i></a>
+            Auto-Pay 
+            <a href="#" data-toggle="tooltip" title='This indicates if you would like to automatically sign and broadcast a DASH payment when matches for this order are detected' class="pull-right"><i class="fa fa-lg fa-question-circle-o margin-top-5"></i></a>
         </label>
         <div class="col-sm-9">
             <select id="autopay" class="selectpicker" name="autopay" data-width="100%">
-                <option value="Y">Yes - Automatically sign &amp; broadcast BTCpay transactions</option>
-                <option value="N">No - Manually sign &amp; broadcast BTCpay transactions</option>
+                <option value="Y">Yes - Automatically sign &amp; broadcast Auto-Pay transactions</option>
+                <option value="N">No - Manually sign &amp; broadcast Auto-Pay transactions</option>
             </select>
         </div>
         <div class="col-xs-12" class="dialog-autobtcpay">
             <div class="checkbox dialog-autobtcpay-confirm" style="display: none" id="dialog-autobtcpay-yes">
                 <label>
                     <input type="checkbox" name="autopay-confirm" value="Y"> 
-                    I understand that I need to  <u><i><b>keep FreeWallet open</b></i></u> in order for Auto-BTCPay to work.
+                    I understand that I need to  <u><i><b>keep DashWallet open</b></i></u> in order for Auto-Pay to work.
                 </label>
             </div>
             <div class="checkbox dialog-autobtcpay-confirm" style="display: none" id="dialog-autobtcpay-no">

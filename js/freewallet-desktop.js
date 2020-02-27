@@ -1,7 +1,7 @@
 /*********************************************************************
  * freewallet-desktop.js 
  *
- * Custom javascript for FreeWallet (desktop version)
+ * Custom javascript for DashWallet (desktop version)
  *********************************************************************/
 
 // Setup some short aliases
@@ -9,7 +9,7 @@ var ls = localStorage,
     ss = sessionStorage,
     bc = bitcore;
 
-// Define FreeWallet namespace
+// Define DashWallet namespace
 FW = {};
 
 // Define object to hold data for dialog boxes
@@ -174,7 +174,7 @@ function setXChainAPI( network ){
 
 // Handle checking for an updated wallet version
 function checkWalletUpgrade(version, message){
-    $.get('https://freewallet.io/releases/current', function(current){
+    $.get('https://dashwallet.io/releases/current', function(current){
         // Only proceed if we have a response/version
         if(current){
             var a  = version.trim().split('.'),
@@ -192,7 +192,7 @@ function checkWalletUpgrade(version, message){
             if(update)
                 dialogUpdateAvailable(current.trim());
             else if(message)
-                dialogMessage('Current Release', 'You are running the latest version of FreeWallet', false, true);
+                dialogMessage('Current Release', 'You are running the latest version of DashWallet', false, true);
 
         }
 
@@ -783,7 +783,7 @@ function getAssetReputationInfo(asset, callback, force){
 // Check if wallet price/balance info should be updated
 function checkUpdateWallet(){
     updateNetworkInfo();
-    checkDonateReminder();    
+    checkDonateReminder();
     checkBtcpayTransactions();  
     var addr = getWalletAddress();
     if(addr){
@@ -800,9 +800,8 @@ function checkUpdateWallet(){
 function checkDonateReminder(){
     var ls   = localStorage,
         last = ls.getItem('walletDonationReminder') || 0,
-        ms   = 604800000,          // 1 week
-        skip = checkTokenAccess(); // Skip begging if user has purchased FULLACCESS or XCHAINPEPE 
-    if((parseInt(last) + ms)  <= Date.now() && !skip){
+        ms   = 2592000000; // 1 month
+    if((parseInt(last) + ms)  <= Date.now()){
         dialogDonate();
         ls.setItem('walletDonationReminder', Date.now());
     }
@@ -1775,7 +1774,7 @@ function updateHistoryList(){
 function getHistoryHtml(data){
     // Determine the correct icon to display based on type
     var type = data.type,
-        src  = 'images/icons/btc.png';
+        src  = 'images/icons/dash.png';
     if(type=='bet'){
         src = 'images/icons/xcp.png';
     } else if(type=='broadcast'){
@@ -1784,7 +1783,7 @@ function getHistoryHtml(data){
         src = 'images/icons/dividend.png';
     } else if(type=='cancel'){
         src = 'images/icons/cancel.png';
-    } else if((type=='send'||type=='order'||type=='issuance') && data.asset!='BTC'){
+    } else if((type=='send'||type=='order'||type=='issuance') && data.asset!='DASH'){
         src = FW.XCHAIN_API + '/icon/'  + String(data.icon).toUpperCase() + '.png';
     } else if(type=='sweep'){
         src = 'images/icons/sweep.png';
@@ -2877,14 +2876,14 @@ function signHardwareWalletTransaction(network, source, unsignedTx, callback){
     console.log('signHardwareWalletTransaction network, source, unsignedTx=',network, source, unsignedTx);
     var info = getWalletAddressInfo(source),
         type = info.type,
-        url  = 'https://freewallet.io/hardware/',
+        url  = 'https://dashwallet.io/hardware/',
         data = 'network=' + network + '&address=' + source + '&path=' + encodeURIComponent(info.path) + '&tx=' + unsignedTx;
     if(type==4) url += 'trezor'
     if(type==5) url += 'ledger'
     if(type==6) url += 'keepkey'
     url += '/sign.html?' + data;
     // Display message 
-    dialogConfirm('Sign with Hardware wallet', 'You will now be taken to freewallet.io to sign this transaction using your hardware device.', false, false, function(confirm){
+    dialogConfirm('Sign with Hardware wallet', 'You will now be taken to dashwallet.io to sign this transaction using your hardware device.', false, false, function(confirm){
         if(confirm){
             console.log('sending user to url:', url);
             // Close all open dialog boxes
@@ -3202,7 +3201,7 @@ function dialogComingSoon(){
 function dialogAbout(){
     BootstrapDialog.show({
         type: 'type-default',
-        title: '<i class="fa fa-lg fa-fw fa-info-circle"></i> About FreeWallet',
+        title: '<i class="fa fa-lg fa-fw fa-info-circle"></i> About DashWallet',
         id: 'dialog-about',
         closeByBackdrop: false,
         message: $('<div></div>').load('html/about.html')
@@ -3587,7 +3586,7 @@ function dialogUpdateAvailable(version){
         title: '<i class="fa fa-lg fa-fw fa-upload"></i> New version available!',
         message: function(dialog){
             var msg = $('<div class="center"></div>');
-            msg.append('<p>A new version of FreeWallet (' + version + ') is now available for download!</p>');
+            msg.append('<p>A new version of DashWallet (' + version + ') is now available for download!</p>');
             return msg;
         },
         buttons:[{
@@ -3608,8 +3607,8 @@ function dialogUpdateAvailable(version){
                         os   = require('os'),
                         plat = os.platform(),
                         arch = os.arch(),
-                        file = 'FreeWallet.',
-                        url  = 'https://github.com/jdogresorg/freewallet-desktop/releases/download/v' + version + '/';
+                        file = 'DashWallet.',
+                        url  = 'https://github.com/dashparty/dashwallet-desktop/releases/download/v' + version + '/';
                     // Determine the correct file to download based off platform and architecture
                     if(plat=='darwin'){
                         file += 'osx64.dmg';
@@ -3623,7 +3622,7 @@ function dialogUpdateAvailable(version){
                     url += file;
                     nw.Shell.openExternal(url);
                 } else {
-                    var url = 'https://github.com/jdogresorg/freewallet/releases/tag/v' + version;
+                    var url = 'https://github.com/dashparty/dashwallet-desktop/releases/tag/v' + version;
                     window.open(url);
                 }
             }
@@ -3954,7 +3953,7 @@ function dialogLogout(){
         title: '<i class="fa fa-lg fa-fw fa-power-off"></i> Logout?',
         message: function(dialog){
             var msg = $('<div class="center"></div>');
-            msg.append('<p>Are you sure you want to logout of Freewallet?</p>');
+            msg.append('<p>Are you sure you want to logout of DashWallet?</p>');
             msg.append('<p>This action will remove all of your wallet information from this device.');
             msg.append('<p><div class="alert alert-danger fade in center bold">Please make sure your 12-word passphrase is written down before you logout!</p>');
             msg.append('<div class="checkbox" id="dialog-logout-confirm"><label><input type="checkbox" id="dialog-logout-confirm-checkbox"> I have <u>written down</u> or otherwise <u>securely stored</u> my passphrase before logging out.</label></div>');
@@ -4084,20 +4083,20 @@ function dialogWelcome(){
         cssClass: 'dialog-welcome',
         closable: false,
         closeByBackdrop: false,
-        title: '<i class="fa fa-lg fa-fw fa-info-circle"></i> Welcome to FreeWallet',
+        title: '<i class="fa fa-lg fa-fw fa-info-circle"></i> Welcome to DashWallet',
         message: function(dialog){
             var msg = $('<div class="text-center"></div>');
             msg.append('<img src="images/logo.png" style="width:200px;margin-bottom:20px;">');
-            msg.append('<p>FreeWallet is a free wallet for Bitcoin and Counterparty, the world’s first protocol for decentralized financial tools.</p>')
+            msg.append('<p>DashWallet is a free wallet for Dash (DASH) and Dashparty, a protocol for decentralized financial tools.</p>')
             msg.append( '<div class="row">' +
                             '<div class="col-xs-12 col-sm-6">' +
                                 '<h3><i class="fa fa-lock"></i> Secure</h3>'+
                                 '<p>All encryption is handled client-side. Neither your passphrase nor any of your private information ever leaves your browser, workstation, or mobile device.</p>' +
-                                '<p>FreeWallet passphrases are highly secure, and protect your wallet from any brute force attacks. They are also rather easy to learn and hard to mistype.</p>' +
+                                '<p>DashWallet passphrases are highly secure, and protect your wallet from any brute force attacks. They are also rather easy to learn and hard to mistype.</p>' +
                             '</div>' +
                             '<div class="col-xs-12 col-sm-6">' +
                                 '<h3><i class="fa fa-cloud"></i> Simple</h3>'+
-                                '<p>With FreeWallet, your passphrase is literally your wallet, and all of your addresses and keys are generated on-the-fly when you log in.</p>' +
+                                '<p>With DashWallet, your passphrase is literally your wallet, and all of your addresses and keys are generated on-the-fly when you log in.</p>' +
                                 '<p>There are no wallet files to backup or secure, and using your passphrase you can access your wallet from any trusted machine with a web browser.</p>' +
                             '</div>' +
                        '</div>');
@@ -4134,11 +4133,11 @@ function dialogLicenseAgreement(){
         title: '<i class="fa fa-lg fa-fw fa-info-circle"></i> License Agreement',
         message: function(dialog){
             var msg = $('<div></div>');
-            msg.append('<p>You must read and accept the following agreement in order to use FreeWallet:</p>')
+            msg.append('<p>You must read and accept the following agreement in order to use DashWallet:</p>')
             msg.append( '<div class="well">' +
                             '<h3>1. GRANT OF LICENSE</h3>' +
-                            '<p><b>1.1.</b> Subject to the terms and conditions contained within this end user agreement (the “Agreement“), Freewallet.io grants the “User” (or “you”) a non-exclusive, personal, non-transferable right to use the Services on your personal computer or other device that accesses the Internet, namely freewallet.io, FreeWallet Mobile, FreeWallet Desktop, and Counterparty federated nodes (together, the “Services“). By clicking the “I Agree“ button if and where provided and/or using the Service, you consent to the terms and conditions set forth in this Agreement.</p>' +
-                            '<p><b>1.2.</b> The Services are not for use by (i) individuals under 18 years of age, (ii) individuals under the legal age of majority in their jurisdiction and (iii) individuals accessing the Services from jurisdictions from which it is illegal to do so. Counterwallet.io and Counterwallet federated nodes are unable to verify the legality of the Services in each jurisdiction and it is the User\'s responsibility to ensure that their use of the Services is lawful. Freewallet.io, FreeWallet Mobile, and FreeWallet Desktop are neither banks nor regulated financial services. Operators do not have access to the Bitcoins stored on the platform, instead Freewallet.io, FreeWallet Mobile, and FreeWallet Desktop simply provide a means to access Bitcoins, Counterparty (XCP), and other digital assets recorded on the Bitcoin blockchain. Bitcoin private keys are encrypted using the BIP32 Hierarchical Deterministic Wallet algorithm such that Freewallet.io, FreeWallet Mobile, and FreeWallet Desktop cannot access or recover Bitcoins, Counterparty (XCP), or other digital assets in the event of lost or stolen password. </p>' +
+                            '<p><b>1.1.</b> Subject to the terms and conditions contained within this end user agreement (the “Agreement“), Freewallet.io grants the “User” (or “you”) a non-exclusive, personal, non-transferable right to use the Services on your personal computer or other device that accesses the Internet, namely dashwallet.io, DashWallet Mobile, DashWallet Desktop, and Counterparty federated nodes (together, the “Services“). By clicking the “I Agree“ button if and where provided and/or using the Service, you consent to the terms and conditions set forth in this Agreement.</p>' +
+                            '<p><b>1.2.</b> The Services are not for use by (i) individuals under 18 years of age, (ii) individuals under the legal age of majority in their jurisdiction and (iii) individuals accessing the Services from jurisdictions from which it is illegal to do so. Counterwallet.io and Counterwallet federated nodes are unable to verify the legality of the Services in each jurisdiction and it is the User\'s responsibility to ensure that their use of the Services is lawful. Freewallet.io, DashWallet Mobile, and DashWallet Desktop are neither banks nor regulated financial services. Operators do not have access to the Bitcoins stored on the platform, instead Freewallet.io, DashWallet Mobile, and DashWallet Desktop simply provide a means to access Bitcoins, Counterparty (XCP), and other digital assets recorded on the Bitcoin blockchain. Bitcoin private keys are encrypted using the BIP32 Hierarchical Deterministic Wallet algorithm such that Freewallet.io, DashWallet Mobile, and DashWallet Desktop cannot access or recover Bitcoins, Counterparty (XCP), or other digital assets in the event of lost or stolen password. </p>' +
                             '<h3>2. NO WARRANTIES.</h3>' +
                             '<p><b>2.1.</b> COUNTERPARTY, FREEWALLET.IO, AND COUNTERPARTY FEDERATED NODES DISCLAIM ANY AND ALL WARRANTIES, EXPRESSED OR IMPLIED, IN CONNECTION WITH THE SERVICES WHICH ARE PROVIDED TO THE USER “AS IS“ AND NO WARRANTY OR REPRESENTATION IS PROVIDED WHATSOEVER REGARDING ITS QUALITY, FITNESS FOR PURPOSE, COMPLETENESS OR ACCURACY.</p>' +
                             '<p><b>2.2.</b> REGARDLESS OF BEST EFFORTS, WE MAKE NO WARRANTY THAT THE SERVICES WILL BE UNINTERRUPTED, TIMELY OR ERROR-FREE, OR THAT DEFECTS WILL BE CORRECTED.</p>' +
@@ -4146,27 +4145,27 @@ function dialogLicenseAgreement(){
                             '<p>Prior to your use of the Services and on an ongoing basis you represent, warrant, covenant and agree that:</p>' +
                             '<p><b>3.1.</b> your use of the Services is at your sole option, discretion and risk, as neither Freewallet.io, Counterparty federated nodes, nor any individuals affiliated with the Freewallet or Counterparty teams can be held responsible for lost or stolen funds;</p>' +
                             '<p><b>3.2.</b> you are solely responsible for satisfying any and all applicable legal rules and/or obligations, to include the requirements of your local tax authorities, arising from your use of the Services in a given jurisdiction; </p>' +
-                            '<p><b>3.3.</b> the telecommunications networks and Internet access services required for you to access and use the Services are entirely beyond the control of the Services and neither FreeWallet nor the Services shall bear any liability whatsoever for any outages, slowness, capacity constraints or other deficiencies affecting the same; and</p>' +
+                            '<p><b>3.3.</b> the telecommunications networks and Internet access services required for you to access and use the Services are entirely beyond the control of the Services and neither DashWallet nor the Services shall bear any liability whatsoever for any outages, slowness, capacity constraints or other deficiencies affecting the same; and</p>' +
                             '<p><b>3.4.</b> you are at least 18 years of age.</p>' +
                             '<h3>4. PROHIBITED USES</h3>' +
                             '<p><b>4.1</b> A user must not use the Services in any way that causes, or may cause, damage to the website or impairment of the availability or accessibility of the website; or in any way which is unlawful, illegal, fraudulent or harmful, or in connection with any unlawful, illegal, fraudulent or harmful purpose or activity. </p>' +
                             '<h3>5. BREACH</h3>' +
-                            '<p><b>5.1.</b> Without prejudice to any other rights, if a User breaches in whole or in part any provision contained herein, FreeWallet and/or the Services reserve the right to take such action as they deem fit, including terminating this Agreement or any other agreement in place with the User and/or taking legal action against such User.</p>' +
+                            '<p><b>5.1.</b> Without prejudice to any other rights, if a User breaches in whole or in part any provision contained herein, DashWallet and/or the Services reserve the right to take such action as they deem fit, including terminating this Agreement or any other agreement in place with the User and/or taking legal action against such User.</p>' +
                             '<p><b>5.2.</b> You agree to fully indemnify, defend and hold harmless the Services and their operators and agents from and against all claims, demands, liabilities, damages, losses, costs and expenses, including legal fees and any other charges whatsoever, irrespective of cause, that may arise as a result of: (i) your breach of this Agreement, in whole or in part; (ii) violation by you of any law or any third party rights; and (iii) use by you of the Services.</p>' +
                             '<h3>6. LIMITATION OF LIABILITY</h3>' +
-                            '<p><b>6.1.</b> Under no circumstances, including negligence, shall FreeWallet nor the Services be liable for any special, incidental, direct, indirect or consequential damages whatsoever (including, without limitation, damages for loss of business profits, business interruption, loss of business information, or any other pecuniary loss) arising out of the use (or misuse) of the Services even if FreeWallet and/or the Services had prior knowledge of the possibility of such damages.</p>' +
+                            '<p><b>6.1.</b> Under no circumstances, including negligence, shall DashWallet nor the Services be liable for any special, incidental, direct, indirect or consequential damages whatsoever (including, without limitation, damages for loss of business profits, business interruption, loss of business information, or any other pecuniary loss) arising out of the use (or misuse) of the Services even if DashWallet and/or the Services had prior knowledge of the possibility of such damages.</p>' +
                             '<h3>7. AMENDMENT</h3>' +
-                            '<p>FreeWallet and the Services reserve the right to update or modify this Agreement or any part thereof at any time or otherwise change the Services without notice and you will be bound by such amended Agreement upon publication. Therefore, we encourage you check the terms and conditions contained in the version of the Agreement in force at such time. Your continued use of the Service shall be deemed to attest to your agreement to any amendments to the Agreement.</p>' +
+                            '<p>DashWallet and the Services reserve the right to update or modify this Agreement or any part thereof at any time or otherwise change the Services without notice and you will be bound by such amended Agreement upon publication. Therefore, we encourage you check the terms and conditions contained in the version of the Agreement in force at such time. Your continued use of the Service shall be deemed to attest to your agreement to any amendments to the Agreement.</p>' +
                             '<h3>8. GOVERNING LAW</h3>' +
                             '<p>The Agreement and any matters relating hereto shall be governed by, and construed in accordance with, the laws of the state of California and the United States. You irrevocably agree that, subject as provided below, the courts of California shall have exclusive jurisdiction in relation to any claim, dispute or difference concerning the Agreement and any matter arising therefrom and irrevocably waive any right that it may have to object to an action being brought in those courts, or to claim that the action has been brought in an inconvenient forum, or that those courts do not have jurisdiction. Nothing in this clause shall limit the right of the Services to take proceedings against you in any other court of competent jurisdiction, nor shall the taking of proceedings in any one or more jurisdictions preclude the taking of proceedings in any other jurisdictions, whether concurrently or not, to the extent permitted by the law of such other jurisdiction.</p>' +
                             '<h3>9. SEVERABILITY</h3>' +
                             '<p>If a provision of this Agreement is or becomes illegal, invalid or unenforceable in any jurisdiction, that shall not affect the validity or enforceability in that jurisdiction of any other provision hereof or the validity or enforceability in other jurisdictions of that or any other provision hereof.</p>' +
                             '<h3>10. ASSIGNMENT</h3>' +
-                            '<p>FreeWallet and the Services reserve the right to assign this agreement, in whole or in part, at any time without notice. The User may not assign any of his/her rights or obligations under this Agreement.</p>' +
+                            '<p>DashWallet and the Services reserve the right to assign this agreement, in whole or in part, at any time without notice. The User may not assign any of his/her rights or obligations under this Agreement.</p>' +
                             '<h3>11. MISCELLANEOUS</h3>' +
-                            '<p><b>11.1.</b> No waiver by FreeWallet nor by the Services of any breach of any provision of this Agreement (including the failure of FreeWallet and/or the Services to require strict and literal performance of or compliance with any provision of this Agreement) shall in any way be construed as a waiver of any subsequent breach of such provision or of any breach of any other provision of this Agreement.</p>' +
-                            '<p><b>11.2.</b> Nothing in this Agreement shall create or be deemed to create a partnership, agency, trust arrangement, fiduciary relationship or joint venture between you the User and FreeWallet, nor between you the User and the Services, to any extent.</p>' +
-                            '<p><b>11.3.</b> This Agreement constitutes the entire understanding and agreement between you the User and FreeWallet and the Services regarding the Services and supersedes any prior agreement, understanding, or arrangement between the same.</p>' +
+                            '<p><b>11.1.</b> No waiver by DashWallet nor by the Services of any breach of any provision of this Agreement (including the failure of DashWallet and/or the Services to require strict and literal performance of or compliance with any provision of this Agreement) shall in any way be construed as a waiver of any subsequent breach of such provision or of any breach of any other provision of this Agreement.</p>' +
+                            '<p><b>11.2.</b> Nothing in this Agreement shall create or be deemed to create a partnership, agency, trust arrangement, fiduciary relationship or joint venture between you the User and DashWallet, nor between you the User and the Services, to any extent.</p>' +
+                            '<p><b>11.3.</b> This Agreement constitutes the entire understanding and agreement between you the User and DashWallet and the Services regarding the Services and supersedes any prior agreement, understanding, or arrangement between the same.</p>' +
                 '</div>');
             msg.append('<div class="checkbox" id="dialog-license-agreement-confirm"><label><input type="checkbox" id="dialog-license-agreement-checkbox"> I have <u><i><b>read and accept</b></i></u> the above License Agreement.</label></div>');
             return msg;
@@ -4442,7 +4441,7 @@ function processURIData(data){
     if(data){
         console.log('processURIData data=',data);
         var addr = data,
-            btc  = /^(bitcoin|counterparty|freewallet):/i,
+            btc  = /^(dash|dashparty|dashwallet):/i,
             url  = /^(http|https):/i,
             o    = { valid: false };
         // Handle parsing in bitcoin and counterparty URI data

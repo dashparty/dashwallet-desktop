@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=DashWallet
+Comment=by Jeremy Johnson <j-dog@j-dog.net>
+Exec=/usr/share/DashWallet/DashWallet %U
+Icon=/usr/share/icons/DashWallet/DashWallet.png
+Terminal=false
+Categories=Office;
+MimeType=x-scheme-handler/dash;x-scheme-handler/dashparty;x-scheme-handler/dashwallet;

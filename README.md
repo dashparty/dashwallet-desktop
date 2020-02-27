@@ -1,6 +1,6 @@
-FreeWallet - Desktop Wallet
+DashWallet - Desktop Wallet
 ---
-FreeWallet is a free wallet which supports Bitcoin and Counterparty.
+DashWallet is a free wallet which supports Dash (DASH) and Dashparty.
 
 Build Notes
 ---
@@ -17,7 +17,7 @@ Run `build.sh` to handle generating builds on Mac/OSX
 Installation Instructions
 ---
 ```
-Windows : Download FreeWallet.exe, run it, complete the installer.
-Mac/OSX : Download FreeWallet.dmg, mount, and drag FreeWallet app to 'Applications' folder
-Linux   : Download FreeWallet.tgz, extract it, run FreeWallet/install.sh
+Windows : Download DashWallet.win64.exe, or DashWallet.win32.exe, run it, complete the installer.
+Mac/OSX : Download DashWallet.dmg, mount, and drag DashWallet app to 'Applications' folder
+Linux   : Download DashWallet.linux64.tgz, or DashWallet.linux32.tgz, extract it, run DashWallet/install.sh
 ```
