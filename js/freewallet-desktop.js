@@ -324,9 +324,9 @@ function createWallet( passphrase, isBip39=false ){
         for(var i=0;i<10;i++){
             var d = s.derive("m/0'/0/" + i),
                 a = bc.Address(d.publicKey, network).toString();
-                b = bitcoinjs.payments.p2wpkh({ pubkey: d.publicKey.toBuffer(), network: bitcoinjs.networks[netname] }).address;
+                // b = bitcoinjs.payments.p2wpkh({ pubkey: d.publicKey.toBuffer(), network: bitcoinjs.networks[netname] }).address;
             addWalletAddress(net, a, 'Address #' + (i + 1), 1, i);
-            addWalletAddress(net, b, 'Segwit Address #' + (i + 1), 7, i);
+            // addWalletAddress(net, b, 'Segwit Address #' + (i + 1), 7, i);
         }
     });
     // Set current address to first address in wallet
