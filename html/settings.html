@@ -69,8 +69,8 @@
                                 <a href="#" data-toggle="tooltip" title='This determines which bitcoin network you would prefer to use' class="pull-right"><i class="fa fa-lg fa-question-circle-o margin-top-5" ></i></a>
                             </label>
                             <select class="col-sm-9 selectpicker" name="network" id="settings-network">
-                                <option value="1">Bitcoin Core (Mainnet)</option>
-                                <option value="2">Bitcoin Core (Testnet)</option>
+                                <option value="1">Dash Core (Mainnet)</option>
+                                <option value="2">Dash Core (Testnet)</option>
                             </select>
                         </div>
                     </fieldset>
@@ -405,6 +405,11 @@ $(document).ready(function(){
         if(dialogCheckLocked('change wallet networks'))
             return;
         var net = $(this).val();
+        if(net==2){
+            dialogMessage('Testnet Disabled', 'DASH Testnet is currently disabled for now', false);
+            $(this).val(net);
+            net = 1;
+        }
         setWalletNetwork(net);
     });
 
