@@ -318,7 +318,7 @@ function createWallet( passphrase, isBip39=false ){
     // Add the first 10 addresses to the wallet (both mainnet and testnet)
     var networks = ['mainnet','testnet'];
     networks.forEach(function(net){
-        var network = bitcore.Networks[net],
+        var network = bc.Networks[net],
             netname = (net=='testnet') ? 'testnet' : 'bitcoin';
         var s = bc.HDPrivateKey.fromSeed(wallet, network);
         for(var i=0;i<10;i++){
@@ -353,11 +353,10 @@ function addNewWalletAddress(net=1, type='normal'){
     console.log('idx B=',idx);
     // Generate new address
     var w = getWallet(),
-        b = bitcore,
-        n = b.Networks[network],
-        s = b.HDPrivateKey.fromSeed(w, n),
+        n = bc.Networks[network],
+        s = bc.HDPrivateKey.fromSeed(w, n),
         d = s.derive("m/0'/0/" + idx);
-    address = b.Address(d.publicKey, n).toString();
+    address = bc.Address(d.publicKey, n).toString();
     label   = 'Address #' + (idx + 1);
     // Support generating Segwit Addresses (Bech32)
     if(type=='segwit'){
@@ -431,7 +430,6 @@ function getWalletPassphrase(){
         // BIP39 wordlist
         if(FW.WALLET_FORMAT==1)
             p = bip39.entropyToMnemonic(w);
-        console.log('getWalletPassphrase w=',w,FW.WALLET_FORMAT,p);
         if(p)
             return p;
     }
@@ -450,7 +448,7 @@ function getWalletAddress( index ){
     // console.log('getWalletAddress index=',index);
     // update network (used in CWBitcore)
     var net = (FW.WALLET_NETWORK==2) ? 'testnet' : 'mainnet',
-    NETWORK = bitcore.Networks[net];
+    NETWORK = bc.Networks[net];
     if(typeof index === 'number'){
         // var type
         var w = getWallet(),
@@ -578,7 +576,6 @@ function addWalletPrivkey(key){
     var net     = FW.WALLET_NETWORK,                // Numeric
         network = (net==2) ? 'testnet' : 'mainnet', // Text
         ls      = localStorage,
-        bc      = bitcore,
         n       = bc.Networks[network],
         address = false;
     // Try to generate a public key and address using the key
@@ -650,7 +647,7 @@ function isValidWalletPassphrase( passphrase, isBip39=false ){
 function isValidAddress(addr){
     var net  = (FW.WALLET_NETWORK==2) ? 'testnet' : 'mainnet';
     // update network (used in CWBitcore)
-    NETWORK  = bitcore.Networks[net];
+    NETWORK  = bc.Networks[net];
     if(CWBitcore.isValidAddress(addr))
         return true;
     return false;
@@ -1587,7 +1584,7 @@ function getPrivateKey(network, address, prepend=false){
         priv = FW.WALLET_KEYS[address];
     // Loop through HD addresses trying to find private key
     if(!priv){
-        var key = bitcore.HDPrivateKey.fromSeed(wallet, bitcore.Networks[net]),
+        var key = bc.HDPrivateKey.fromSeed(wallet, bc.Networks[net]),
             idx = false;
         FW.WALLET_ADDRESSES.forEach(function(item){
             if(item.address==address)
@@ -1596,7 +1593,7 @@ function getPrivateKey(network, address, prepend=false){
         // If we found the address index, use it to generate private key
         if(idx !== false){
             var d = key.derive("m/0'/0/" + idx),
-                a = bitcore.Address(d.publicKey, bitcore.Networks[net]).toString();
+                a = bc.Address(d.publicKey, bc.Networks[net]).toString();
             // Handle generating the bech32 address
             if(a!=address){
                 var netname = (network=='testnet') ? 'testnet' : 'bitcoin';
@@ -2212,12 +2209,11 @@ function cpSend(network, source, destination, memo, memo_is_hex, currency, amoun
 }
 
 // Handle generating a multi-peer-multi-asset (MPMA) send transaction
-function cpMultiSend(network, source, destination, memo, asset, quantity, fee, callback){
+function cpMultiSend(network, source, destination, memo, memo_is_hex, asset, quantity, fee, callback){
     var cb  = (typeof callback === 'function') ? callback : false;
     // Create unsigned send transaction
-    createMultiSend(network, source, destination, memo, asset, quantity, 1000, null, function(o){
+    createMultiSend(network, source, destination, memo, memo_is_hex, asset, quantity, 1000, null, function(o){
         if(o && o.result){
-            console.log('pretx unsignedTx=',o.result);
             // Sign the transaction
             signTransaction(network, source, destination, o.result, function(signedTx){
                 if(signedTx){
@@ -2225,13 +2221,11 @@ function cpMultiSend(network, source, destination, memo, asset, quantity, fee, c
                     broadcastTransaction(network, signedTx, function(txid){
                         if(txid){
                             // Create unsigned send transaction
-                            createMultiSend(network, source, destination, memo, asset, quantity, 1000, txid, function(o){
+                            createMultiSend(network, source, destination, memo, memo_is_hex, asset, quantity, 1000, txid, function(o){
                                 if(o && o.result){
-                                     console.log('send unsignedTx=',o.result);
                                     // Sign the transaction
                                     signP2SHTransaction(network, source, destination, o.result, signedTx, function(signedTx){
                                         if(signedTx){
-                                            console.log('send signedTx=',signedTx);
                                             // Broadcast the transaction
                                             FW.BROADCAST_LOCK = false;
                                             broadcastTransaction(network, signedTx, function(txid){
@@ -2392,6 +2386,7 @@ function cpBtcpay(network, source, order_match_id, fee, callback){
             signTransaction(network, source, source, o.result, function(signedTx){
                 if(signedTx){
                     // Broadcast the transaction
+                    FW.BROADCAST_LOCK = false;
                     broadcastTransaction(network, signedTx, function(txid){
                         if(txid){
                             if(cb)
@@ -2594,7 +2589,8 @@ function createSend(network, source, destination, memo, memo_is_hex, asset, quan
             destination: destination,
             asset: asset,
             quantity: parseInt(quantity),
-            allow_unconfirmed_inputs: true
+            allow_unconfirmed_inputs: true,
+            fee: parseInt(fee)
         },
         jsonrpc: "2.0",
         id: 0
@@ -2603,8 +2599,6 @@ function createSend(network, source, destination, memo, memo_is_hex, asset, quan
         data.params.memo = memo;
     if(memo_is_hex)
         data.params.memo_is_hex = true;
-    if(fee)
-        data.params.fee = fee;
     cpRequest(network, data, function(o){
         if(typeof callback === 'function')
             callback(o);
@@ -2612,8 +2606,8 @@ function createSend(network, source, destination, memo, memo_is_hex, asset, quan
 }
 
 // Handle creating send transaction
-function createMultiSend(network, source, destination, memo, asset, quantity, fee, txid, callback){
-    // console.log('createMultiSend=',network, source, destination, memo, asset, quantity, fee, p2sh_pretx_txid);
+function createMultiSend(network, source, destination, memo, memo_is_hex, asset, quantity, fee, txid, callback){
+    // console.log('createMultiSend=',network, source, destination, memo, memo_is_hex, asset, quantity, fee, p2sh_pretx_txid);
     var data = {
        method: "create_send",
        params: {
@@ -2621,16 +2615,15 @@ function createMultiSend(network, source, destination, memo, asset, quantity, fe
             destination: destination,
             asset: asset,
             quantity: quantity,
+            memo: memo,
+            memo_is_hex: memo_is_hex,
+            fee: parseInt(fee),
             allow_unconfirmed_inputs: true,
             encoding: "p2sh"
         },
         jsonrpc: "2.0",
         id: 0
     };
-    if(memo)
-        data.params.memo = memo;
-    if(fee)
-        data.params.fee = fee;
     if(txid)
         data.params.p2sh_pretx_txid = txid;
     cpRequest(network, data, function(o){
@@ -2740,10 +2733,10 @@ function createOrder(network, source, get_asset, give_asset, get_quantity, give_
             give_asset: give_asset,
             give_quantity: give_quantity,
             expiration: expiration,
-            fee: parseInt(fee),
             // Temp fix for bug in API (https://github.com/CounterpartyXCP/counterparty-lib/issues/1025)
             fee_required: 0,
             fee_provided: 0,
+            fee: parseInt(fee),
             allow_unconfirmed_inputs: true
         },
         jsonrpc: "2.0",
@@ -2783,13 +2776,12 @@ function createBurn(network, source, quantity, fee, callback){
        params: {
             source: source,
             quantity: parseInt(quantity),
+            fee: parseInt(fee),
             allow_unconfirmed_inputs: true
         },
         jsonrpc: "2.0",
         id: 0
     };
-    if(fee)
-        data.params.fee = fee;
     cpRequest(network, data, function(o){
         if(typeof callback === 'function')
             callback(o);
@@ -2806,13 +2798,12 @@ function createDestroy(network, source, asset, quantity, memo, fee, callback){
             source: source,
             asset: asset,
             quantity: parseInt(quantity),
+            fee: parseInt(fee),
             allow_unconfirmed_inputs: true
         },
         jsonrpc: "2.0",
         id: 0
     };
-    if(fee)
-        data.params.fee = fee;
     if(memo)
         data.params.tag = memo;
     cpRequest(network, data, function(o){
@@ -2831,13 +2822,12 @@ function createSweep(network, source, destination, flags, memo, fee, callback){
             destination: destination,
             flags: parseInt(flags),
             memo: memo,
+            fee: parseInt(fee),
             allow_unconfirmed_inputs: true
         },
         jsonrpc: "2.0",
         id: 0
     };
-    if(fee)
-        data.params.fee = fee;
     cpRequest(network, data, function(o){
         if(typeof callback === 'function')
             callback(o);
@@ -2856,13 +2846,13 @@ function createDispenser(network, source, asset, escrow_amount, give_amount, btc
             escrow_quantity: parseInt(escrow_amount),
             give_quantity: parseInt(give_amount),
             mainchainrate: parseInt(btc_amount),
-            status:  parseInt(status)
+            status:  parseInt(status),
+            fee: parseInt(fee),
+            allow_unconfirmed_inputs: true
         },
         jsonrpc: "2.0",
         id: 0
     };
-    if(fee)
-        data.params.fee = fee;
     cpRequest(network, data, function(o){
         if(typeof callback === 'function')
             callback(o);
@@ -2918,7 +2908,7 @@ function signTransaction(network, source, destination, unsignedTx, callback){
             callback = (typeof callback === 'function') ? callback : false,
             privKey  = getPrivateKey(net, source);
         // Set the appropriate network and get key
-        NETWORK   = bitcore.Networks[netName];
+        NETWORK   = bc.Networks[netName];
         var cwKey = new CWPrivateKey(privKey);
         // Convert destination to array if not already
         if(typeof(destination)==='string')
@@ -2996,24 +2986,6 @@ function signTransaction(network, source, destination, unsignedTx, callback){
     }
 }
 
-
-// // Assumes NodeJS runtime. Several libraries exist to replace the Buffer class on web browsers
-// const bitcoin = bitcoinjs;
-// async function signP2SHDataTX(wif, txHex, prevUtxo) {
-//   const network    = bitcoin.networks.testnet // Change appropiately to your used network
-//   const keyPair    = bitcoin.ECPair.fromWIF(wif, network)
-//   const dataTx     = bitcoin.Transaction.fromHex(txHex)    // The unsigned second part of the 2 part P2SH transactions
-//   const preTx      = bitcoin.Transaction.fromHex(prevUtxo) // The previous transaction in raw hex in its entirety
-//   const sigType    = bitcoin.Transaction.SIGHASH_ALL    // This shouldn't be changed unless you REALLY know what you're doing
-//   const sigHash    = dataTx.hashForSignature(0, bitcoin.script.decompile(dataTx.ins[0].script)[0], sigType)
-//   const sig        = keyPair.sign(sigHash)
-//   const encodedSig = bitcoin.script.signature.encode(sig, sigType)
-//   const compiled   = bitcoin.script.compile([encodedSig])
-
-//   dataTx.ins[0].script = Buffer.concat([compiled, dataTx.ins[0].script])
-//   return dataTx.toHex() // The resulting signed transaction in raw hex, ready to be broadcasted
-// }
-
 // Handle signing a transaction based on what type of address it is
 function signP2SHTransaction(network, source, destination, unsignedTx, prevTx, callback){
     var net        = (network=='testnet') ? 'testnet' : 'mainnet', 
@@ -3058,8 +3030,7 @@ function getUTXOs(network, address, callback){
 
 // Handle signing a message and returning the signature
 function signMessage(network, source, message){
-    var bc  = bitcore,
-        net = (network=='testnet') ? 'testnet' : 'mainnet',
+    var net = (network=='testnet') ? 'testnet' : 'mainnet',
         key = bc.PrivateKey.fromWIF(getPrivateKey(net, source)),
         sig = bc.Message(message).sign(key);
     return sig;
@@ -3541,13 +3512,13 @@ function dialogImportWatchAddress(){
                     network = 'mainnet',
                     valid   = false;
                 // Check if the address is valid on mainnet
-                NETWORK  = bitcore.Networks[network];
+                NETWORK  = bc.Networks[network];
                 if(CWBitcore.isValidAddress(address))
                     valid = true;
                 // Check if address is valid on testnet
                 if(!valid){
                     network = 'testnet';
-                    NETWORK = bitcore.Networks[network];
+                    NETWORK = bc.Networks[network];
                     if(CWBitcore.isValidAddress(address))
                         valid = true;
                 }
