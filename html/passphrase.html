@@ -12,7 +12,7 @@
     <div class="checkbox" id="dialog-new-passphrase-confirm">
         <label><input type="checkbox" id="dialog-new-passphrase-checkbox"> I have <u>written down</u> or otherwise <u>securely stored</u> my passphrase.</label>
     </div>
- 
+    <!-- 
     <div class="input-group pull-left" style="width:180px" id="amount-value-wrapper">
         <label class="input-group-addon">Format</label>
         <select id="format-select" name="format" class="selectpicker">
@@ -20,6 +20,7 @@
             <option data-content="BIP39">BIP39</option>
         </select>
     </div>
+    -->
     <div id="btn-ok" class="btn btn-ok btn-success pull-right margin-left-5"><i class="fa fa-lg fa-fw fa-thumbs-up"></i> Ok</div>
     <div id="btn-cancel" class="btn btn-ok btn-danger pull-right margin-left-5"><i class="fa fa-lg fa-fw fa-thumbs-down"></i> Cancel</div>
 
@@ -29,7 +30,7 @@
 <script>
 $(document).ready(function(){
 
-    var isBip39    = false,
+    var isBip39    = true,
         passphrase = generateWalletPassphrase(isBip39);
 
     // Initialize the passphrase format picker and default to counterwallet's funky format
@@ -39,11 +40,11 @@ $(document).ready(function(){
     $('.btc-wallet-passphrase').text(passphrase);
 
     // Re-generate the passphrase on format change
-    $('#format-select').change(function(){
-        isBip39    = ($(this).val()=='BIP39') ? true : false;
-        passphrase = generateWalletPassphrase(isBip39);
-        $('.btc-wallet-passphrase').text(passphrase);
-    });
+    // $('#format-select').change(function(){
+    //     isBip39    = ($(this).val()=='BIP39') ? true : false;
+    //     passphrase = generateWalletPassphrase(isBip39);
+    //     $('.btc-wallet-passphrase').text(passphrase);
+    // });
 
     // Handle going back to the welcome screen if the user clicks cancel
     $('#btn-cancel').click(function(){
