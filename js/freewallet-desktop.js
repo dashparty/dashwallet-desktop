@@ -7,7 +7,7 @@
 // Setup some short aliases
 var ls = localStorage,
     ss = sessionStorage,
-    bc = bitcore;
+    bc = dashcore;
 
 // Define DashWallet namespace
 FW = {};
