@@ -648,9 +648,12 @@ function isValidAddress(addr){
     var net  = (FW.WALLET_NETWORK==2) ? 'testnet' : 'mainnet';
     // update network (used in CWBitcore)
     NETWORK  = bc.Networks[net];
-    if(CWBitcore.isValidAddress(addr))
-        return true;
-    return false;
+    try {
+        var p2pkh = bc.Address.isValid(addr, NETWORK, bc.Address.Pay2PubKeyHash);
+        return p2pkh;
+    } catch (err){
+        return false;
+    }
 }
 
 // Validate if we are running in nwjs or not
