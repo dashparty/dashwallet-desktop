@@ -1,7 +1,7 @@
 {
   "main": "index.html",
   "name": "DashWallet",
-  "description": "Dashwallet is a free desktop wallet that supports Bitcoin and Counterparty",
+  "description": "Dashwallet is a free desktop wallet that supports Dash and Dashparty",
   "version": "1.0.0",
   "author": "Jeremy Johnson <j-dog@j-dog.net>",
   "license": "MIT",
