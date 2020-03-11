@@ -1,6 +1,6 @@
 <!-- BTC Amount Field -->
 <label class="col-sm-3 control-label text-left" for="btc-amount">
-    BTC Amount
+    DASH Amount
     <a href="#" data-toggle="tooltip" title='This is the amount that you would like to charge per dispense' class="pull-right" id="btc-amount-tooltip"><i class="fa fa-lg fa-question-circle-o margin-top-5" ></i></a>
 </label>
 <div class="col-sm-9">
@@ -32,8 +32,8 @@ function updateBTCAmount(val){
 $(document).ready(function(){
 
     // Stash current price info on BTC and XCP
-    var btc_info = getAssetPrice('BTC',true);
-        xcp_info = getAssetPrice('XCP',true);
+    var btc_info = getAssetPrice('DASH',true);
+        xcp_info = getAssetPrice('DSP',true);
         type     = getFormType(),
         dust_sat = 5430,
         tip      = $('#btc-amount-tooltip');

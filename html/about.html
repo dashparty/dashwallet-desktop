@@ -8,6 +8,7 @@
     <div>
         <a target="_blank" href="https://xchain.io"><img class="about-logo" src="images/xchain-color-500.png"></a>
         <a target="_blank" href="https://coindaddy.io"><img class="about-logo" src="images/coindaddy-500.jpg"></a>
+        <a target="_blank" href="https://blockcypher.com"><img class="about-logo" src="images/blockcypher-500.jpg"></a>
     </div>
     <br>
     <p align="justify">If you would like to support continued development of DashWallet and continued hosting of the XChain.io dashparty block explorer, please consider making a donation using the 'Donate' button below.</p>
@@ -56,24 +57,15 @@ $(document).ready(function(){
         update.hide();
     }
 
-    // When a user clicks the donate now button, save bounty address and launch 'Send Funds' window
+    // When a user clicks the donate now button, launch 'Send Funds' window
     $('#btn-donate').click($.debounce(100, function(e){
         FW.DIALOG_DATA = {
-            destination: address
+            destination: address,
+            token: 'DASH'
         };
         dialogSend();
         dialogClose('dialog-about');
     }));
-
-    // When a user clicks the donate now button, save bounty address and launch 'Send Funds' window
-    $('#btn-buy').click($.debounce(100, function(e){
-        FW.DIALOG_DATA = {
-            token: 'FULLACCESS'
-        };
-        loadPage('dispensers');
-        dialogClose('dialog-about');
-    }));
-
 
     // Hide the send form if users clicks 'cancel' button
     $('#btn-ok').click($.debounce(100,function(e){

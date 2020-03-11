@@ -62,9 +62,9 @@ $(document).ready(function(){
     $('#source-address-field').load('html/fields/source-address.html');
     $('#token-description-field').load('html/fields/token-description.html');
 
-    // Stash current price info on BTC and XCP
-    var btc_info   = getAssetPrice('BTC',true),
-        xcp_info   = getAssetPrice('XCP',true);
+    // Stash current price info on DASH and DSP
+    var btc_info   = getAssetPrice('DASH',true),
+        xcp_info   = getAssetPrice('DSP',true);
 
     // Delay initializing some fields to give things a chance to load
     setTimeout(function(){
@@ -156,9 +156,7 @@ $(document).ready(function(){
                             } else {
                                 // Parent asset is owned by another address
                                 if(data.owner!=FW.WALLET_ADDRESS){
-                                    dialogMessage('Notice', '<center><p>The name <b><i>' + parent + '</i></b> is already registered to address ' + data.owner + '</p>' +
-                                                  '<p>You may still purchase <b><i>' + name + '</b></i> from the current owner if they have listed it for sale.</p>' + 
-                                                  '<a href="https://coindaddy.io/search?network=xcp&q=' + name + '" class="btn btn-success" target="_blank"><i class="fa fw-coindaddy pull-left" style="top:0px"></i> Check if this token is listed for sale on CoinDaddy</a></center>', true);
+                                    dialogMessage('Notice', '<center><p>The name <b><i>' + parent + '</i></b> is already registered to address ' + data.owner + '</p>', true);
                                 }
                             }
                         });
@@ -175,10 +173,8 @@ $(document).ready(function(){
                             // Notify user that they need to switch 
                             dialogMessage('Notice', '<center>The name <b><i>' + name + '</i></b> is already registered to another address in your wallet ' + o.owner + '</center>', true);
                         } else {
-                                // Notify user asset is registered to another address
-                                dialogMessage('Notice', '<center><p>The name <b><i>' + name + '</i></b> is already registered to address ' + o.owner + '</p>' +
-                                              '<p>You may still purchase this token from the current owner if they have listed it for sale.</p>' + 
-                                              '<a href="https://coindaddy.io/search?network=xcp&q=' + name + '" class="btn btn-success" target="_blank"><i class="fa fw-coindaddy pull-left" style="top:0px"></i> Check if ' + name + ' is for sale on CoinDaddy</a></center>', true);
+                            // Notify user asset is registered to another address
+                            dialogMessage('Notice', '<center><p>The name <b><i>' + name + '</i></b> is already registered to address ' + o.owner + '</p>', true);
                         }
                     }
                 }

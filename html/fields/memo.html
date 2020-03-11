@@ -33,8 +33,8 @@ $(document).ready(function(){
     $('#token-name-select').change(function(e){
         var val = $(this).val(),
             el  = $('#memo');
-        // If this is BTC, hardcode the values and skip getting asset info
-        if(val=='BTC'){
+        // If this is DASH, hardcode the values and skip getting asset info
+        if(val=='DASH'){
             // Disable the memo
             el.attr('disabled', true);
             el.val('');

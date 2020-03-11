@@ -4,7 +4,7 @@
     <input type="hidden" name="tx0_hash"    id="tx0_hash">
     <input type="hidden" name="tx1_hash"    id="tx1_hash">
     <div class="alert alert-info text-center">
-        A BTC order has matched and BTC payment is required before block <span id="expire_block"></span>
+        A DASH order has matched and DASH payment is required before block <span id="expire_block"></span>
     </div>
     <!-- Order Information -->
     <div class="form-group">
@@ -17,7 +17,7 @@
                 <td width="180">
                     <table border=0>
                     <tr>
-                        <td><img src="images/icons/btc.png" class="margin-right-5" id="assetA-icon"></td>
+                        <td><img src="images/icons/dash.png" class="margin-right-5" id="assetA-icon"></td>
                         <td id="infoA" class="bold"></td>
                     </tr>
                     </table>                
@@ -56,11 +56,11 @@ $(document).ready(function(){
         // Handle loading any data from FW.DIALOG_DATA
         var data = FW.DIALOG_DATA;
         if(data){
-            var asset   = (data.forward_asset=='BTC') ? data.backward_asset : data.forward_asset,
-                amountA = (data.forward_asset=='BTC') ? data.forward_quantity : data.backward_quantity,
-                amountB = (data.forward_asset=='BTC') ? data.backward_quantity : data.forward_quantity,
+            var asset   = (data.forward_asset=='DASH') ? data.backward_asset : data.forward_asset,
+                amountA = (data.forward_asset=='DASH') ? data.forward_quantity : data.backward_quantity,
+                amountB = (data.forward_asset=='DASH') ? data.backward_quantity : data.forward_quantity,
                 format  = '0,0.00000000';
-            $('#infoA').html(numeral(amountA).format(format) + '<br>BTC');
+            $('#infoA').html(numeral(amountA).format(format) + '<br>DASH');
             $('#infoB').html(numeral(amountB).format(format) + '<br>' + asset);
             $('#assetB-icon').attr('src', FW.XCHAIN_API + '/icon/' + asset + '.png');
             // Request info on the non-BTC asset and set the asset amount properly (divisible or not)
@@ -127,7 +127,7 @@ $(document).ready(function(){
             var doneCb = function(tx){
                 if(tx){
                     dialogClose('dialog-btcpay');
-                    dialogMessage('<i class="fa fa-lg fa-check"></i> BTCPay Successful', '<center>Your BTC payment has been broadcast to the network and your order should complete shortly.' +
+                    dialogMessage('<i class="fa fa-lg fa-check"></i> DASHPay Successful', '<center>Your DASH payment has been broadcast to the network and your order should complete shortly.' +
                                   '<br/><br/><a class="btn btn-success" href="' + FW.XCHAIN_API + '/tx/' + tx + '" target="_blank">View Transaction</a></center>');
                     // Remove the order match from the queue and check the queue again after a brief delay to let the previous dialog box close 
                     removeFromBtcpayQueue(vals.tx0_hash, vals.tx1_hash);

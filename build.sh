@@ -88,7 +88,7 @@ done
 
 # Update app to handle custom URIs
 while true; do
-    read -p "Update app to handle custom urls?" yn
+    read -p "Update mac app to handle custom urls?" yn
     case $yn in
         [Yy]* ) yn="Y"
                 plist=$base_dir/builds/$app_name/osx64/$app_name.app/Contents/Info.plist

@@ -38,8 +38,8 @@
             <table class="table table-condensed table-striped table-bordered no-bottom-margin table-centered text-center">
             <thead>
                 <tr class="info">
-                    <th width="33%">Bitcoin (BTC)</th>
-                    <th width="34%">Counterparty (XCP)</th>
+                    <th width="33%">Dash (DASH)</th>
+                    <th width="34%">Dashparty (DSP)</th>
                     <th width="33%">US Dollars (USD)</th>
                 </tr>
             </thead>
@@ -60,7 +60,7 @@
             <thead>
                 <tr class="info">
                     <th width="33%">Total Supply <i id="asset-locked-status" class="fa fa-lg fa-unlock"></i></th>
-                    <th width="34%">Last Trade Price (XCP)</th>
+                    <th width="34%">Last Trade Price (DSP)</th>
                     <th width="33%">Market Cap. (USD)</th>
                 </tr>
             </thead>
@@ -150,8 +150,8 @@ $(document).ready(function(){
     // Display balances list        
     updateBalancesList();
 
-    // Display BTC asset info
-    loadAssetInfo('BTC');
+    // Display DASH asset info
+    loadAssetInfo('DASH');
 
     // Handle detecting keyup events and filter the balances list to show matches
     // buffer the event by 250ms so we can allow for additional keystrokes before processing

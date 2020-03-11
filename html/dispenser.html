@@ -103,9 +103,9 @@ $(document).ready(function(){
             $('#give-amount').closest('.form-group').addClass('has-error has-danger');
         }
 
-        // Verify we have valid BTC amount 
+        // Verify we have valid DASH amount 
         if(numeral(vals['btc-amount']).value()==0){
-            errors.push('You must enter an BTC amount which is greater than 0!');
+            errors.push('You must enter an DASH amount which is greater than 0!');
             $('#btc-amount').closest('.form-group').addClass('has-error has-danger');
         }
 
@@ -141,7 +141,7 @@ $(document).ready(function(){
             // Confirm the action with the user
             var title = '<i class="fa fa-lg fa-fw fa-arrows-h"></i> Confirm Create Dispenser?',
                 msg   = 'Escrow <b>' + vals['escrow-amount'] + ' ' + vals.name + '</b> in a dispenser and';
-                msg  += '<br>Dispense <b>' + vals['give-amount'] + ' ' + vals.name + '</b> for <b>' + vals['btc-amount'] + ' BTC</b> each?';
+                msg  += '<br>Dispense <b>' + vals['give-amount'] + ' ' + vals.name + '</b> for <b>' + vals['btc-amount'] + ' DASH</b> each?';
             dialogConfirm(title, '<center>' + msg + '</center>', false, true, confirmCb);
         }
     })

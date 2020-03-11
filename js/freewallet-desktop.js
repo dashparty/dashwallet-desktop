@@ -53,32 +53,32 @@ FW.WALLET_HISTORY  = JSON.parse(ls.getItem('walletHistory'))  || [];
 // Define default server info
 FW.WALLET_SERVER_INFO = {
     mainnet: {
-        host: 'public.coindaddy.io',
-        port: 4001,                 
+        host: 'public.dashparty.io',
+        port: 4901,                 
         user: 'rpc',                
-        pass: '1234',               
+        pass: 'rpc',               
         ssl: true,
-        api_host: 'xchain.io',
+        api_host: 'dashparty.xchain.io',
         api_ssl: true
     },
     testnet: {
-        host: 'public.coindaddy.io',
-        port: 14001,                
+        host: 'public.dashparty.io',
+        port: 14901,                
         user: 'rpc',                
-        pass: '1234',               
+        pass: 'rpc',               
         ssl: true,
-        api_host: 'testnet.xchain.io',
+        api_host: 'dashparty-testnet.xchain.io',
         api_ssl: true
     }
 };
 
 // Define the default and base markets for the Decentralized Exchange (DEX)
-FW.DEFAULT_MARKETS = ['BTC','XCP','BITCRYSTALS','PEPECASH','WILLCOIN'];
+FW.DEFAULT_MARKETS = ['DASH','DSP'];
 FW.BASE_MARKETS    = JSON.parse(ls.getItem('walletMarkets')) || FW.DEFAULT_MARKETS;
 FW.MARKET_OPTIONS  = JSON.parse(ls.getItem('walletMarketOptions')) || [1,2]; // 1=named, 2=subasset, 3=numeric 
 
 // Define default dispenser watchlist assets
-FW.DEFAULT_DISPENSERS = ['XCP','PEPECASH'];
+FW.DEFAULT_DISPENSERS = ['DSP'];
 FW.BASE_DISPENSERS    = JSON.parse(ls.getItem('walletDispensers')) || FW.DEFAULT_DISPENSERS;
 FW.DISPENSER_OPTIONS  = JSON.parse(ls.getItem('walletDispenserOptions')) || []; // 1=hide closed 
 
@@ -348,9 +348,7 @@ function addNewWalletAddress(net=1, type='normal'){
         if(item.type==addrtype && item.network==net && item.index>idx)
             idx = item.index;
     });
-    console.log('idx A=',idx);
     idx++; // Increase index for new address
-    console.log('idx B=',idx);
     // Generate new address
     var w = getWallet(),
         n = bc.Networks[network],
@@ -444,19 +442,21 @@ function lockWallet(){
 }
 
 // Get wallet addresses using given index 
-function getWalletAddress( index ){
+function getWalletAddress( index, net ){
     // console.log('getWalletAddress index=',index);
-    // update network (used in CWBitcore)
-    var net = (FW.WALLET_NETWORK==2) ? 'testnet' : 'mainnet',
-    NETWORK = bc.Networks[net];
+    // Default to current wallet network
+    var netname = (FW.WALLET_NETWORK==2) ? 'testnet' : 'mainnet';
+    if(net)
+        netname = (net=='testnet'||net==2) ? 'testnet' : 'mainnet';
+    network = bc.Networks[netname];
     if(typeof index === 'number'){
         // var type
         var w = getWallet(),
             a = null;
         if(w){
-            k = bc.HDPrivateKey.fromSeed(w, NETWORK),
+            k = bc.HDPrivateKey.fromSeed(w, network),
             d = k.derive("m/0'/0/" + index),
-            a = bc.Address(d.publicKey, NETWORK).toString();
+            a = bc.Address(d.publicKey, network).toString();
         } else {
             dialogMessage('<i class="fa fa-lg fa-fw fa-exclamation-circle"></i> Error(s)', errors.join('<br/>') );
         }
@@ -644,12 +644,14 @@ function isValidWalletPassphrase( passphrase, isBip39=false ){
 }
 
 // Validate address
-function isValidAddress(addr){
-    var net  = (FW.WALLET_NETWORK==2) ? 'testnet' : 'mainnet';
-    // update network (used in CWBitcore)
-    NETWORK  = bc.Networks[net];
+function isValidAddress(addr, net){
+    // Default to current wallet network
+    var netname = (FW.WALLET_NETWORK==2) ? 'testnet' : 'mainnet';
+    if(net)
+        netname = (net=='testnet'||net==2) ? 'testnet' : 'mainnet';
+    network = bc.Networks[netname];
     try {
-        var p2pkh = bc.Address.isValid(addr, NETWORK, bc.Address.Pay2PubKeyHash);
+        var p2pkh = bc.Address.isValid(addr, network, bc.Address.Pay2PubKeyHash);
         return p2pkh;
     } catch (err){
         return false;
@@ -687,7 +689,7 @@ function updateWalletOptions(){
         block = (FW.NETWORK_INFO.network_info) ? FW.NETWORK_INFO.network_info[net].block_height : 'NA';
     $('.footer-current-block').text('Block ' + numeral(block).format('0,0'));
     $('.footer-last-updated').html('Last updated <span data-livestamp='  + last.substr(0,last.length-3) + ' class="nowrap"></span>');
-    $('.footer-current-price').text('$' + numeral(getAssetPrice('XCP')).format('0,0.00') + ' USD');
+    $('.footer-current-price').text('$' + numeral(getAssetPrice('DSP')).format('0,0.00') + ' USD');
     var info = getWalletAddressInfo(FW.WALLET_ADDRESS);
     if(info.type==3){
         $('#action-view-privkey').hide();
@@ -799,9 +801,11 @@ function checkUpdateWallet(){
 // Handle begging for donations from users on a regular basis
 function checkDonateReminder(){
     var ls   = localStorage,
+        sign = ls.getItem('licenseAgreementAccept') || 0,
         last = ls.getItem('walletDonationReminder') || 0,
         ms   = 2592000000; // 1 month
-    if((parseInt(last) + ms)  <= Date.now()){
+    // Only show the donation reminder once a month, and don't show the first time they open the wallet
+    if((parseInt(last) + ms)  <= Date.now() && sign){
         dialogDonate();
         ls.setItem('walletDonationReminder', Date.now());
     }
@@ -1093,28 +1097,29 @@ function updateBTCBalance(address, callback){
         if(typeof bal === 'number'){
             callback(bal)
         } else {
+            callback(0);
             // Failover #1 - Blockstream
-            getBTCBalance(address, 'blockstream', function(bal){
-                if(typeof bal === 'number'){
-                    callback(bal)
-                } else {
-                    // Failover #2 - Chain.so
-                    getBTCBalance(address, 'chain.so', function(bal){
-                        if(typeof bal === 'number'){
-                            callback(bal)
-                        } else {
-                            // Failover #3 - Indexd
-                            getBTCBalance(address, 'indexd', function(bal){
-                                if(typeof bal === 'number'){
-                                    callback(bal)
-                                } else {
-                                    callback(0);
-                                }
-                            });
-                        }
-                    });
-                }
-            });
+            // getBTCBalance(address, 'blockstream', function(bal){
+            //     if(typeof bal === 'number'){
+            //         callback(bal)
+            //     } else {
+            //         // Failover #2 - Chain.so
+            //         getBTCBalance(address, 'chain.so', function(bal){
+            //             if(typeof bal === 'number'){
+            //                 callback(bal)
+            //             } else {
+            //                 // Failover #3 - Indexd
+            //                 getBTCBalance(address, 'indexd', function(bal){
+            //                     if(typeof bal === 'number'){
+            //                         callback(bal)
+            //                     } else {
+            //                         callback(0);
+            //                     }
+            //                 });
+            //             }
+            //         });
+            //     }
+            // });
         }
     });
 }
@@ -1126,7 +1131,7 @@ function getBTCBalance(address, source, callback){
     // BlockCypher
     if(source=='blockcypher'){
         var net = (FW.WALLET_NETWORK==2) ? 'test3' : 'main';
-        $.getJSON('https://api.blockcypher.com/v1/btc/' + net + '/addrs/' + addr + '/balance', function( o ){
+        $.getJSON('https://api.blockcypher.com/v1/dash/' + net + '/addrs/' + addr + '/balance', function( o ){
             if(typeof o.balance === 'number')
                 bal = o.balance + o.unconfirmed_balance;
         }).always(function(){
@@ -1219,8 +1224,8 @@ function updateWalletBalances( address, force ){
             lastUpdated: Date.now()
         }
         // Get BTC/XCP currency info
-        var btc_info = getAssetPrice('BTC',true),
-            xcp_info = getAssetPrice('XCP',true);
+        var btc_info = getAssetPrice('DASH',true),
+            xcp_info = getAssetPrice('DSP',true);
         // Update asset balances
         updateBalances(address, 1, true, function(){
             xcp = true; // Flag to indicate we are done with XCP update
@@ -1230,11 +1235,11 @@ function updateWalletBalances( address, force ){
         updateBTCBalance(address, function(sat){
             var qty = numeral(sat * 0.00000001).format('0,0.00000000');
             FW.TEMP_BALANCES.data.push({
-                asset: "BTC",
+                asset: 'DASH',
                 estimated_value: {
-                    btc: numeral(qty).format('0,0.00000000'),
+                    dash: numeral(qty).format('0,0.00000000'),
                     usd: numeral(parseFloat(btc_info.price_usd) * qty).format('0.00'),
-                    xcp: numeral(qty / parseFloat(xcp_info.price_btc)).format('0.00000000'),
+                    dsp: numeral(qty * 10).format('0.00000000')
                 },
                 quantity: qty
             });
@@ -1251,21 +1256,22 @@ function updateBTCHistory(address, callback){
         if(txs instanceof Array){
             callback(txs)
         } else {
-            // Failover #1 - Blockstream
-            getBTCHistory(address, 'blockstream', function(txs){
-                if(txs instanceof Array){
-                    callback(txs)
-                } else {
-                    // Failover #2 - Chain.so
-                    getBTCHistory(address, 'chain.so', function(txs){
-                        if(txs instanceof Array){
-                            callback(txs)
-                        } else {
-                            callback([]);
-                        }
-                    });
-                }
-            });
+            callback([]);
+            // // Failover #1 - Blockstream
+            // getBTCHistory(address, 'blockstream', function(txs){
+            //     if(txs instanceof Array){
+            //         callback(txs)
+            //     } else {
+            //         // Failover #2 - Chain.so
+            //         getBTCHistory(address, 'chain.so', function(txs){
+            //             if(txs instanceof Array){
+            //                 callback(txs)
+            //             } else {
+            //                 callback([]);
+            //             }
+            //         });
+            //     }
+            // });
         }
     });
 }
@@ -1277,7 +1283,7 @@ function getBTCHistory(address, source, callback){
     // BlockCypher - Last 50 transactions
     if(source=='blockcypher'){
         var net = (FW.WALLET_NETWORK==2) ? 'test3' : 'main';
-        $.getJSON('https://api.blockcypher.com/v1/btc/' + net + '/addrs/' + addr + '/full?limit=50', function( o ){
+        $.getJSON('https://api.blockcypher.com/v1/dash/' + net + '/addrs/' + addr + '/full?limit=50', function( o ){
             if(o.txs){
                 data = [];
                 o.txs.forEach(function(tx){
@@ -1426,7 +1432,7 @@ function updateWalletHistory( address, force ){
                     arr.push(item);
             });
             // Bail out if this is already a known BTC transaction
-            if(data.asset=='BTC' && typeof record.tx!== 'undefined')
+            if(data.asset=='DASH' && typeof record.tx!== 'undefined')
                 return;
             // Add the data to the array and save arr to info.data
             arr.push(data);
@@ -1439,7 +1445,7 @@ function updateWalletHistory( address, force ){
                     addTransaction({
                         type: 'send',
                         tx: tx.hash,
-                        asset: 'BTC',
+                        asset: 'DASH',
                         asset_longname: '', 
                         quantity: tx.quantity,
                         timestamp: tx.timestamp
@@ -1459,10 +1465,10 @@ function updateWalletHistory( address, force ){
                         tx_type  = String(item.tx_type).toLowerCase(),
                         longname = item.asset_longname;
                     if(tx_type=='bet'){
-                        asset    = 'XCP';
+                        asset    = 'DSP';
                         quantity = item.wager_quantity;
                     } else if(tx_type=='burn'){
-                        asset    = 'BTC';
+                        asset    = 'DASH';
                         quantity = item.burned;
                     } else if(tx_type=='order'){
                         asset    = item.get_asset,
@@ -1618,13 +1624,13 @@ function getPrivateKey(network, address, prepend=false){
 function updateBalancesList(){
     var html    = '',
         cnt     = 0,
-        active  = 'BTC', // default to BTC being active
+        active  = 'DASH', // default to DASH being active
         addr    = FW.WALLET_ADDRESS,
         search  = $('.balances-list-search'),
         filter  = search.val(),
         info    = getAddressBalance(addr),
-        btc     = getAddressBalance(addr, 'BTC'),
-        xcp     = getAddressBalance(addr, 'XCP'),
+        btc     = getAddressBalance(addr, 'DASH'),
+        xcp     = getAddressBalance(addr, 'DSP'),
         btc_amt = (btc) ? btc.quantity : 0,
         xcp_amt = (xcp) ? xcp.quantity : 0,
         btc_val = (btc) ? btc.estimated_value.usd : 0,
@@ -1633,26 +1639,26 @@ function updateBalancesList(){
         fmt_usd = '0,0.00',
         display = [];
     if(info && info.data.length){
-        // Always display BTC balance
+        // Always display DASH balance
         display.push({ 
-            asset: 'BTC', 
-            icon: 'BTC', 
+            asset: 'DASH', 
+            icon: 'DASH', 
             quantity: numeral(btc_amt).format(fmt), 
             value: numeral(btc_val).format(fmt_usd), 
             cls: 'active' 
         });
-        // Display XCP balance if we have one
+        // Display DSP balance if we have one
         if(xcp_amt)
             display.push({ 
-                asset: 'XCP', 
-                icon: 'XCP', 
+                asset: 'DSP', 
+                icon: 'DSP', 
                 quantity: numeral(xcp_amt).format(fmt), 
                 value: numeral(xcp_val).format(fmt_usd), 
                 cls: '' 
             });
         // Loop through balances and add
         info.data.forEach(function(item){
-            if(item.asset.length>=4){
+            if(item.asset.length>=4 && item.asset!='DASH'){
                 var asset = (item.asset_longname!='') ? item.asset_longname : item.asset,
                     fmt   = (item.quantity.indexOf('.')!=-1) ? '0,0.00000000' : '0,0';
                 display.push({ 
@@ -1713,7 +1719,7 @@ function getBalanceHtml(data){
 function updateHistoryList(){
     var html    = '',
         cnt     = 0,
-        active  = 'BTC', // default to BTC being active
+        active  = 'DASH', // default to DASH being active
         addr    = FW.WALLET_ADDRESS,
         search  = $('.history-list-search'),
         filter  = search.val(),
@@ -1797,13 +1803,13 @@ function getHistoryHtml(data){
     } else if(type=='bet'){
         str = 'Bet ';
     } else if(type=='broadcast'){
-        str = 'Counterparty Broadcast';
+        str = 'Broadcast';
     } else if(type=='burn'){
         str = 'Burned ';
     } else if(type=='dividend'){
         str = 'Paid Dividend on ';
     } else if(type=='issuance'){
-        str = 'Counterparty Issuance';
+        str = 'Issuance';
     } else if(type=='order'){
         str = 'Order - Buy ';
     } else if(type=='cancel'){
@@ -1872,8 +1878,8 @@ function loadAssetInfo(asset){
         $('#asset-info-more').attr('href', FW.XCHAIN_API + '/asset/' + asset);
         // Estimated Value
         var val = balance.estimated_value;
-        $('#asset-value-btc').text(numeral(val.btc).format('0,0.00000000'));
-        $('#asset-value-xcp').text(numeral(val.xcp).format('0,0.00000000'));
+        $('#asset-value-btc').text(numeral(val.dash).format('0,0.00000000'));
+        $('#asset-value-xcp').text(numeral(val.dsp).format('0,0.00000000'));
         $('#asset-value-usd').text('$' + numeral(val.usd).format('0,0.00'));
         var bal = balance.quantity,
             fmt = (balance.quantity.indexOf('.')==-1) ? '0,0' : '0,0.00000000';
@@ -1884,16 +1890,15 @@ function loadAssetInfo(asset){
             if(!o.error){
                 var fmt = (String(o.supply).indexOf('.')==-1) ? '0,0' : '0,0.00000000';
                 $('#asset-total-supply').text(numeral(o.supply).format(fmt));
-                // console.log('xcp,supply,usd',o.estimated_value.xcp, o.supply, xcp_usd);
-                var xcp_usd = getAssetPrice('XCP'),
-                    mcap    = numeral((o.estimated_value.xcp * o.supply) * xcp_usd).format('0,0.00'),
-                    last    = numeral(o.estimated_value.xcp).format('0,0.00000000'),
+                var xcp_usd = getAssetPrice('DSP');
+                var mcap    = numeral((o.estimated_value.dsp * o.supply) * xcp_usd).format('0,0.00'),
+                    last    = numeral(o.estimated_value.dsp).format('0,0.00000000'),
                     lock    = $('#asset-locked-status');
                 $('#asset-marketcap').text('$' + mcap);
                 $('#asset-last-price').text(last);
                 $('#asset-description').text(o.description);
                 // Force locked on certain items
-                if(['BTC','XCP'].indexOf(asset)!=-1)
+                if(['DASH','DSP'].indexOf(asset)!=-1)
                     o.locked = true;
                 if(o.locked){
                     lock.removeClass('fa-unlock').addClass('fa-lock');
@@ -1901,7 +1906,7 @@ function loadAssetInfo(asset){
                     lock.removeClass('fa-lock').addClass('fa-unlock');
                 }
                 // Only allow feedback on XCP and assets, not BTC
-                if(asset=='BTC'){
+                if(asset=='DASH'){
                     feedback.hide();
                 } else {
                     feedback.attr('href','https://reputation.coindaddy.io/xcp/asset/' + asset);
@@ -1928,17 +1933,17 @@ function loadAssetInfo(asset){
                 // Handle loading enhanced asset info
                 if(re1.test(desc)){
                     loadExtendedInfo();
-                } else if(asset=='BTC'){
+                } else if(asset=='DASH'){
                     loadExtendedInfo({
-                        name: 'Bitcoin (BTC)',
-                        description: 'Bitcoin is digital money',
-                        website: 'https://bitcoin.org'
+                        name: 'Dash (DASH)',
+                        description: 'Dash is digital money',
+                        website: 'https://dash.org'
                     });
-                } else if(asset=='XCP'){
+                } else if(asset=='DSP'){
                     loadExtendedInfo({
-                        name: 'Counterparty (XCP)',
-                        description: 'Counterparty is a free and open platform that puts powerful financial tools in the hands of everyone with an Internet connection. Counterparty creates a robust and secure marketplace directly on the Bitcoin blockchain, extending Bitcoin\'s functionality into a full fledged peer-to-peer financial platform.',
-                        website: 'https://counterparty.io'
+                        name: 'Dashparty (DSP)',
+                        description: 'Dashparty is a free and open platform that puts powerful financial tools in the hands of everyone with an Internet connection. Dashparty creates a robust and secure marketplace directly on the DASH blockchain, extending Dash\'s functionality into a full fledged peer-to-peer financial platform.',
+                        website: 'https://dashparty.io'
                     });
                 } else {
                     if(o.description==''){
@@ -1961,21 +1966,21 @@ function loadAssetInfo(asset){
             }
         }
         // Hardcode the BTC values.. otherwise request the asset details
-        if(asset=='BTC'){
-            var btc = getAssetPrice('BTC',true),
-                xcp = getAssetPrice('XCP',true);
+        if(asset=='DASH'){
+            var btc = getAssetPrice('DASH',true),
+                xcp = getAssetPrice('DSP',true);
             cb({
-                asset: 'BTC',
-                description: "Bitcoin is digital money",
+                asset: 'DASH',
+                description: "DASH is digital money",
                 estimated_value: {
                     btc: 1,
                     usd: btc.market_cap_usd,
-                    xcp: 1/xcp.price_btc
+                    dsp: 1/xcp.price_btc
                 },
                 supply: btc.total_supply
             });
             cb2({
-                asset: "BTC",
+                asset: "DASH",
                 verify_status: "Not Verified",
                 rating_current: "5.00",
                 rating_30day: "5.00",
@@ -2069,8 +2074,8 @@ function updateAddressList(){
                     label   = label.replace(filter,'<span class="highlight-search-term">' + filter + '</span>');
                     address = address.replace(filter,'<span class="highlight-search-term">' + filter + '</span>');
                 }
-                var btc = getAddressBalance(address, 'BTC'),
-                    xcp = getAddressBalance(address, 'XCP'),
+                var btc = getAddressBalance(address, 'DASH'),
+                    xcp = getAddressBalance(address, 'DSP'),
                     btc_amt = (btc) ? btc.quantity : 0,
                     xcp_amt = (xcp) ? xcp.quantity : 0,
                     fmt = '0,0.00000000';
@@ -2219,39 +2224,40 @@ function cpMultiSend(network, source, destination, memo, memo_is_hex, asset, qua
         if(o && o.result){
             // Sign the transaction
             signTransaction(network, source, destination, o.result, function(signedTx){
+                console.log('signedTx=')
                 if(signedTx){
                     // Broadcast the transaction
-                    broadcastTransaction(network, signedTx, function(txid){
-                        if(txid){
-                            // Create unsigned send transaction
-                            createMultiSend(network, source, destination, memo, memo_is_hex, asset, quantity, 1000, txid, function(o){
-                                if(o && o.result){
-                                    // Sign the transaction
-                                    signP2SHTransaction(network, source, destination, o.result, function(signedTx){
-                                        if(signedTx){
-                                            // Broadcast the transaction
-                                            FW.BROADCAST_LOCK = false;
-                                            broadcastTransaction(network, signedTx, function(txid){
-                                                if(txid){
-                                                    if(cb)
-                                                        cb(txid);
-                                                } else {
-                                                    cbError('Error while trying to broadcast send transaction', cb);
-                                                }
-                                            });
-                                        } else {
-                                            cbError('Error while trying to sign send transaction',cb);
-                                        }
-                                    });
-                                } else {
-                                    var msg = (o.error && o.error.message) ? o.error.message : 'Error while trying to create pretx transaction';
-                                    cbError(msg, cb);
-                                }
-                            });
-                        } else {
-                            cbError('Error while trying to broadcast pretx transaction', cb);
-                        }
-                    });
+                    // broadcastTransaction(network, signedTx, function(txid){
+                    //     if(txid){
+                    //         // Create unsigned send transaction
+                    //         createMultiSend(network, source, destination, memo, memo_is_hex, asset, quantity, 1000, txid, function(o){
+                    //             if(o && o.result){
+                    //                 // Sign the transaction
+                    //                 signP2SHTransaction(network, source, destination, o.result, signedTx, function(signedTx){
+                    //                     if(signedTx){
+                    //                         // Broadcast the transaction
+                    //                         FW.BROADCAST_LOCK = false;
+                    //                         broadcastTransaction(network, signedTx, function(txid){
+                    //                             if(txid){
+                    //                                 if(cb)
+                    //                                     cb(txid);
+                    //                             } else {
+                    //                                 cbError('Error while trying to broadcast send transaction', cb);
+                    //                             }
+                    //                         });
+                    //                     } else {
+                    //                         cbError('Error while trying to sign send transaction',cb);
+                    //                     }
+                    //                 });
+                    //             } else {
+                    //                 var msg = (o.error && o.error.message) ? o.error.message : 'Error while trying to create pretx transaction';
+                    //                 cbError(msg, cb);
+                    //             }
+                    //         });
+                    //     } else {
+                    //         cbError('Error while trying to broadcast pretx transaction', cb);
+                    //     }
+                    // });
                 } else {
                     cbError('Error while trying to sign pretx transaction',cb);
                 }
@@ -2901,6 +2907,7 @@ function isHardwareWallet(address){
     return false;
 }
 
+
 // Handle signing a transaction based on what type of address it is
 function signTransaction(network, source, destination, unsignedTx, callback){
     if(isHardwareWallet(source)){
@@ -2909,88 +2916,70 @@ function signTransaction(network, source, destination, unsignedTx, callback){
         var net      = (network=='testnet') ? 'testnet' : 'mainnet', 
             netName  = (network=='testnet') ? 'testnet' : 'livenet', // bitcore
             callback = (typeof callback === 'function') ? callback : false,
-            privKey  = getPrivateKey(net, source);
+            privKey  = getPrivateKey(net, source),
+            signedTx = false;
         // Set the appropriate network and get key
         NETWORK   = bc.Networks[netName];
-        var cwKey = new CWPrivateKey(privKey);
         // Convert destination to array if not already
         if(typeof(destination)==='string')
             destination = [destination];
-        // Callback to processes response from signRawTransaction()
-        var cb = function(e, signedTx){
-            if(e)
-                console.log('error =',e);
-            if(callback)
-                callback(signedTx);
-        }
-        // Check if any of the addresses are bech32
-        var sourceIsBech32 = isBech32(source);
-        var hasDestBech32  = destination.reduce((p, x) => p || isBech32(x), false);
-        var hasAnyBech32   = hasDestBech32 || sourceIsBech32;
-        // Handle signing bech32 addresses
-        if(hasAnyBech32){
-            // Use bitcoinjs implementation
-            var tx      = bitcoinjs.Transaction.fromHex(unsignedTx),
-                netName = (net=='testnet') ? 'testnet' : 'bitcoin', // bitcoinjs
-                network = bitcoinjs.networks[netName],
-                txb     = new bitcoinjs.TransactionBuilder(network),
-                keypair = bitcoinjs.ECPair.fromWIF(cwKey.getWIF(), network);
-            // Callback to modify transaction after we get a list of UTXOs back
-            var utxoCb = function(data){
-                var utxoMap = {};
-                data.forEach(utxo => {
-                    utxoMap[utxo.txId] = utxo;
+        try {
+            var key  = bc.PrivateKey(privKey),
+                tx   = bc.Transaction(unsignedTx);
+            // Loop through the inputs and make them signable
+            tx.inputs.forEach(function(input, idx){
+                var script     = bc.Script(input._scriptBuffer.toString('hex')),
+                    scriptType = script.classify(),
+                    types      = bc.Script.types;
+                // Build out the input object
+                inputObj = input.toObject();
+                inputObj.output = bc.Transaction.Output({
+                    script: input._scriptBuffer.toString('hex'),
+                    satoshis: 0 // we don't know this value, setting 0 because otherwise it's going to cry about not being an INT
                 });
-                if(sourceIsBech32){
-                    var input = bitcoinjs.payments.p2wpkh({ pubkey: keypair.publicKey, network: network });
-                } else {
-                    var input = bitcoinjs.payments.p2pkh({ pubkey: keypair.publicKey, network: network });
+                // Tweak the inputs a bit based on the script type
+                switch(scriptType){
+                    // Pay to public key
+                    case types.PUBKEY_OUT:
+                        tx.inputs[idx] = new bc.Transaction.Input.PublicKey(inputObj);
+                        break;
+                    // Pay to public key hash
+                    case types.PUBKEYHASH_OUT:
+                        tx.inputs[idx] = new bc.Transaction.Input.PublicKeyHash(inputObj);
+                        break;
+                    case types.MULTISIG_IN:
+                    case types.MULTISIG_OUT:
+                    case types.SCRIPTHASH_OUT:
+                    case types.DATA_OUT:
+                    case types.PUBKEY_IN:
+                    case types.PUBKEYHASH_IN:
+                    case types.SCRIPTHASH_IN:
+                    default:
                 }
-                // Handle adding inputs
-                for(var i=0; i < tx.ins.length; i++){
-                    // We get reversed tx hashes somehow after parsing
-                    var txhash = tx.ins[i].hash.reverse().toString('hex');
-                    var prev = utxoMap[txhash];
-                    txb.addInput(tx.ins[i].hash.toString('hex'), prev.vout, null, input.output);
-                }
-                // Handle adding outputs
-                for(var i=0; i < tx.outs.length; i++){
-                    var txout = tx.outs[i];
-                    txb.addOutput(txout.script, txout.value);
-                }
-                // var signedHex = txb.build().toHex();
-                // console.log('signedHex before=',signedHex);                
-                // Loop through the inputs and sign
-                for (var i=0; i < tx.ins.length; i++) {
-                    var txhash = tx.ins[i].hash.toString('hex');
-                    if(txhash in utxoMap){
-                        var prev = utxoMap[txhash];
-                        var redeemScript = undefined;
-                        /*if (hasDestBech32) {
-                          redeemScript =  // Future support for P2WSH
-                        }*/
-                        // Math.floor is less than ideal in this scenario, we need to get the raw satoshi value in the utxo map
-                        txb.sign(i, keypair, null, null, prev.value, redeemScript);
-                    } else {
-                        // Throw error that we couldn't sign tx
-                        console.log("Failed to sign transaction: " + "Incomplete SegWit inputs");
-                        return;
-                    }
-                }
-                var signedHex = txb.build().toHex();
-                cb(null, signedHex);
-            }
-            // Get list of utxo
-            getUTXOs(net, source, utxoCb);
-        } else {
-            // Sign using bitcore
-            CWBitcore.signRawTransaction(unsignedTx, cwKey, cb);
+            });
+            // Sign the transaction
+            tx.sign(privKey);
+            // disable any checks that have anything to do with the values, because we don't know the values of the inputs
+            var opts = {
+                disableIsFullySigned: false,
+                disableSmallFees: true,
+                disableLargeFees: true,
+                disableDustOutputs: true,
+                disableMoreOutputThanInput: true
+            };
+            // Get the signed tx hash
+            signedTx = tx.serialize(opts);
+        } catch(e){
+            console.log('error e=',e);
         }
+        // Process the callback if we have one
+        if(callback)
+            callback(signedTx);
     }
 }
 
 // Handle signing a transaction based on what type of address it is
-function signP2SHTransaction(network, source, destination, unsignedTx, callback){
+function signP2SHTransaction(network, source, destination, unsignedTx, prevTx, callback){
     var net        = (network=='testnet') ? 'testnet' : 'mainnet', 
         netName    = (network=='testnet') ? 'testnet' : 'bitcoin', // bitcoinjs-lib
         network    = bitcoinjs.networks[netName],
@@ -2999,6 +2988,7 @@ function signP2SHTransaction(network, source, destination, unsignedTx, callback)
         cwKey      = new CWPrivateKey(privKey),
         keyPair    = bitcoinjs.ECPair.fromWIF(cwKey.getWIF(), network),
         dataTx     = bitcoinjs.Transaction.fromHex(unsignedTx), // The unsigned second part of the 2 part P2SH transactions
+        preTx      = bitcoinjs.Transaction.fromHex(prevTx),     // The previous transaction in raw hex in its entirety
         sigType    = bitcoinjs.Transaction.SIGHASH_ALL;         // This shouldn't be changed unless you REALLY know what you're doing
     // Loop through all inputs and sign
     for (let i=0; i < dataTx.ins.length; i++) {
@@ -3052,7 +3042,6 @@ function broadcastTransaction(network, tx, callback){
             FW.BROADCAST_LOCK = false;
         }, 5000);
     }
-    var net  = (network=='testnet') ? 'BTCTEST' : 'BTC';
     // First try to broadcast using the XChain API
     $.ajax({
         type: "POST",
@@ -3070,6 +3059,7 @@ function broadcastTransaction(network, tx, callback){
                 if(txid)
                     console.log('Broadcasted transaction hash=',txid);
             } else {
+                var net  = (network=='testnet') ? 'DASHTEST' : 'DASH';
                 // If the request to XChain API failed, fallback to chain.so API
                 $.ajax({
                     type: "POST",
@@ -3511,19 +3501,14 @@ function dialogImportWatchAddress(){
             hotkey: 13,
             action: function(dialog){
                 var address = $('#importWatchOnlyAddress').val(),
-                    network = 'mainnet',
                     valid   = false;
+                NETWORK  = bc.Networks['mainnet'];
                 // Check if the address is valid on mainnet
-                NETWORK  = bc.Networks[network];
-                if(CWBitcore.isValidAddress(address))
+                if(isValidAddress(address,'mainnet'))
                     valid = true;
                 // Check if address is valid on testnet
-                if(!valid){
-                    network = 'testnet';
-                    NETWORK = bc.Networks[network];
-                    if(CWBitcore.isValidAddress(address))
-                        valid = true;
-                }
+                // if(isValidAddress(address,'testnet'))
+                //     valid = true;
                 if(valid){
                     var cnt   = 0,
                         found = false;
@@ -3780,7 +3765,7 @@ function dialogSignTransaction(){
 // 'Burn' dialog box
 function dialogBurn(){
     // Make sure wallet is unlocked
-    if(dialogCheckLocked('burn BTC for XCP'))
+    if(dialogCheckLocked('burn DASH for DSP'))
         return;
     BootstrapDialog.show({
         type: 'type-default',
@@ -3827,7 +3812,7 @@ function dialogDispenserBuy(){
         type: 'type-default',
         id: 'dialog-dispenser-buy',
         closeByBackdrop: false,
-        title: '<i class="fa fa-fw fa-btc"></i> Buy ' + FW.DIALOG_DATA.name,
+        title: '<i class="fa fa-fw fa-usd"></i> Buy ' + FW.DIALOG_DATA.name,
         message: $('<div></div>').load('html/dispensers/dispenser-buy.html'),
     });
 }
@@ -3982,7 +3967,7 @@ function dialogEnableBtcpay(){
             cssClass: 'btn-danger', 
             action: function(dialog){
                 // Confirm with user that auto-btcpay will be disabled
-                dialogConfirm('Disable Auto-BTCpay?','<div class="alert alert-danger text-center"><b>Notice</b>: Any order matches for BTC will need to be paid manually!</div>', false, false, function(){
+                dialogConfirm('Disable Auto-BTCpay?','<div class="alert alert-danger text-center"><b>Notice</b>: Any order matches for DASH will need to be paid manually!</div>', false, false, function(){
                     dialog.close();
                 });
             }
@@ -4013,7 +3998,7 @@ function dialogEnableBtcpay(){
                         ss.removeItem('wallet');
                         ss.removeItem('walletPassword');
                         dialog.close();
-                        dialogMessage('<i class="fa fa-lg fa-fw fa-unlock"></i> Auto-BTCpay Enabled', 'Auto-BTCpay is now enabled and any order matches for BTC will be automatically paid');
+                        dialogMessage('<i class="fa fa-lg fa-fw fa-unlock"></i> Auto-BTCpay Enabled', 'Auto-BTCpay is now enabled and any order matches for DASH will be automatically paid');
                     } else {
                         dialogMessage(null, 'Invalid password', true);
                     }
@@ -4193,27 +4178,27 @@ function displayContextMenu(event){
             label: 'Send ' + asset + ' to...',
             click: function(){ dialogSend(); }
         }));
-        if(asset=='BTC'){
+        if(asset=='DASH'){
             mnu.append(new nw.MenuItem({ 
-                label: 'Burn BTC for XCP...',
+                label: 'Burn DASH for DSP...',
                 click: function(){ dialogBurn(); }
             }));
         }
-        if(asset!='BTC'){
+        if(asset!='DASH'){
             mnu.append(new nw.MenuItem({ 
                 label: 'Create ' + asset + ' Dispenser...',
                 click: function(){ dialogDispenser(); }
             }));
         }
-        if(asset!='BTC' && asset!='XCP'){
+        if(asset!='DASH' && asset!='DSP'){
             mnu.append(new nw.MenuItem({ 
                 label: 'Pay Dividends on ' + asset,
                 click: function(){ dialogPayDividend(); }
             }));
         }
-        if(asset!='BTC'){
+        if(asset!='DASH'){
             mnu.append(new nw.MenuItem({ type: 'separator' }));
-            if(asset!='XCP'){
+            if(asset!='DSP'){
                 mnu.append(new nw.MenuItem({ 
                     label: 'Issue ' + asset + ' Supply',
                     click: function(){ dialogIssueSupply(); }
@@ -4227,7 +4212,7 @@ function displayContextMenu(event){
                 label: 'Destroy ' + asset + ' Supply',
                 click: function(){ dialogDestroy(); }
             }));
-            if(asset!='XCP'){
+            if(asset!='DSP'){
                 mnu.append(new nw.MenuItem({ 
                     label: 'Change ' + asset + ' Description',
                     click: function(){ dialogChangeDescription(); }
@@ -4264,22 +4249,6 @@ function displayContextMenu(event){
             label: 'View on XChain.io',
             click: function(){ 
                 var url  = FW.XCHAIN_API + '/tx/' + tx;
-                nw.Shell.openExternal(url);
-            }
-        }));
-        mnu.append(new nw.MenuItem({ 
-            label: 'View on Blocktrail.com',
-            click: function(){ 
-                var net = (FW.WALLET_NETWORK==2) ? 'tBTC' : 'BTC',
-                    url  = 'https://www.blocktrail.com/' + net + '/tx/' + tx;
-                nw.Shell.openExternal(url);
-            }
-        }));
-        mnu.append(new nw.MenuItem({ 
-            label: 'View on Chain.so',
-            click: function(){ 
-                var net = (FW.WALLET_NETWORK==2) ? 'BTCTEST' : 'BTC',
-                    url  = 'https://chain.so/tx/' + net + '/' + tx;
                 nw.Shell.openExternal(url);
             }
         }));
@@ -4323,7 +4292,7 @@ function displayContextMenu(event){
     if(el.length!=0){
         var mnu    = new nw.Menu(),
             market = el.attr('data-market');
-        if(market!='XCP' && market!='BTC'){
+        if(market!='DSP' && market!='DASH'){
             mnu.append(new nw.MenuItem({ 
                 label: 'Remove Market',
                 click: function(){ 
@@ -4339,7 +4308,7 @@ function displayContextMenu(event){
     if(el.length!=0){
         var mnu    = new nw.Menu(),
             market = el.attr('data-market');
-        if(market!='XCP' && market!='BTC'){
+        if(market!='DSP' && market!='DASH'){
             mnu.append(new nw.MenuItem({ 
                 label: 'Open ' + market + ' market',
                 click: function(){ 
@@ -4361,7 +4330,7 @@ function displayContextMenu(event){
     if(el.length!=0){
         var mnu   = new nw.Menu(),
             asset = el.attr('data-asset');
-        if(asset!='XCP' && asset!='my-dispensers'){
+        if(asset!='DSP' && asset!='my-dispensers'){
             mnu.append(new nw.MenuItem({ 
                 label: 'Remove Watchlist',
                 click: function(){ 
@@ -4432,7 +4401,7 @@ function processURIData(data){
         if(o.memo)
             o.message = o.memo;
         // Handle validating that the provided address is valid
-        if(addr.length>25 && CWBitcore.isValidAddress(addr)){
+        if(addr.length>25 && isValidAddress(addr)){
             o.valid   = true;
             o.address = addr;
         } else {
@@ -4537,7 +4506,7 @@ function processURIData(data){
             // Show 'Send' tool and pass forward scanned 
             FW.DIALOG_DATA = {
                 destination: o.address,
-                token: o.asset || 'BTC',
+                token: o.asset || 'DASH',
                 amount: o.amount || '',
                 message: o.message || ''
             }
@@ -4679,7 +4648,7 @@ function removeMarket(market){
     $("li.tab[data-market='" + market + "']").remove();
     $('#' + market).remove();
     // Switch back to BTC tab
-    $('#markets-tabs a[href="#BTC"]').tab('show');
+    $('#markets-tabs a[href="#DASH"]').tab('show');
     // Handle removing from base pairs 
     if(FW.BASE_MARKETS.indexOf(market)!=-1){
         // Remove market from FW.BASE_MARKETS
@@ -5201,7 +5170,7 @@ function addDispenserWatchlist(asset){
                   '                <th>Escrowed</th>' + 
                   '                <th>Give Amount</th>' + 
                   '                <th>Give Remaining</th>' + 
-                  '                <th>BTC Price</th>' + 
+                  '                <th>DASH Price</th>' + 
                   '                <th>Status</th>' + 
                   '                <th></th>' + 
                   '            </tr>' +

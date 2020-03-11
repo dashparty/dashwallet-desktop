@@ -48,21 +48,12 @@ $(document).ready(function(){
     $('#btn-donate').click($.debounce(100, function(e){
         FW.DIALOG_DATA = {
             destination: address,
-            token: 'BTC'
+            token: 'DASH'
         };
+        console.log('FW.DIALOG_DATA=',FW.DIALOG_DATA);
         dialogSend();
         dialogClose('dialog-donate');
     }));
-
-    // When a user clicks the donate now button, save bounty address and launch 'Send Funds' window
-    $('#btn-buy').click($.debounce(100, function(e){
-        FW.DIALOG_DATA = {
-            token: 'FULLACCESS'
-        };
-        loadPage('dispensers');
-        dialogClose('dialog-donate');
-    }));
-
 
     // Hide the send form if users clicks 'cancel' button
     $('#btn-ok').click($.debounce(100,function(e){
