@@ -4167,7 +4167,7 @@ function displayContextMenu(event){
                 loadPage('exchange'); 
             }
         }));
-        if(asset!='BTC'){
+        if(asset!='DASH'){
             mnu.append(new nw.MenuItem({ 
                 label: 'View ' + asset + ' Dispensers',
                 click: function(){ 
